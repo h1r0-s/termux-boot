@@ -17,6 +17,17 @@ jobs:
     steps:
     - name: Clone repository
       uses: actions/checkout@v3
+    - name: Modify app/build.gradle
+      run: |
+        # Retrieve keystore file from Emacs feature/android branch.
+        git clone --depth 1 \
+                  --branch feature/android \
+                  --no-checkout https://github.com/emacs-mirror/emacs.git
+        git -C emacs sparse-checkout set java/emacs.keystore
+        git -C emacs checkout feature/android
+
+        # sed app/build.gradle to refer java/emacs.keystore instead of testkey_untrusted.jks.
+        perl -pi -e "s|storeFile file\('testkey_untrusted.jks'\)|storeFile file('../emacs/java/emacs.keystore')|;s|keyAlias 'alias'|keyAlias 'emacs keystore'|;s|storePassword 'xrj45yWGLbsO7W0v'|storePassword 'emacs1'|;s|keyPassword 'xrj45yWGLbsO7W0v'|keyPassword 'emacs1'|" app/build.gradle
     - name: Build
       run: |
         ./gradlew assembleDebug
